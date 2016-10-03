@@ -1,0 +1,130 @@
+webview的好教程和项目
+http://blog.csdn.net/developer_jiangqq?viewmode=contents
+
+
+1、4.4系统以下的webview 官方文档翻译：http://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2014/1106/1920.html
+    无论是js调用java，还是java调用js，传递的参数都要用''包住
+    -----------------------------
+   在webview点击链接时回调shouldOverrideUrlLoading，如果返回false则在webview加载这个链接，true则启动默认浏览器来加载
+   如果使用post方式去请求网址，那么shouldOverrideUrlLoading()不会被调用
+       mWebView.setWebViewClient(new MyWebViewClient());
+        private class MyWebViewClient extends WebViewClient {
+               @Override
+               public boolean shouldOverrideUrlLoading(WebView view, String url) {
+
+                   Toast.makeText(getApplicationContext(), "" + Uri.parse(url).getHost(), Toast.LENGTH_SHORT).show();
+                   if (Uri.parse(url).getHost().equals("wwww.baidu.com")) {
+
+                       return false;
+                   }
+                   //因为这个链接不是我们的网站或者这个链接可能是错误的(404)，为了良好体验，避免这种情况，所以最好启动浏览器来加载
+                   // Otherwise, the link is not for a page on my site, so launch another Activity that handles URLs
+                   Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                   startActivity(intent);
+                   return true;
+               }
+           }
+    -----------------------------------
+    点击back键时，可以拦截事件由webview接收处理，webview.canGoBack() .canGoForward() .goBack() .goForward()
+    if ((keyCode == KeyEvent.KEYCODE_BACK) && myWebView.canGoBack()) {
+            myWebView.goBack();
+            return true;
+        }
+    -----------------------------------------
+    <meta> name为"viewport"，content的值，要应用viewport，必须mWebView.getSettings().setUseWideViewPort(true);
+
+
+        <meta name="viewport"
+          content="width=500,initial-scale=1.0, maximum-scale=2.0, minimum-scale=5.0,user-scalable=yes"/>
+          width：跟浏览器或webview提供的区域不同，它是一个虚拟的窗口，当网页内容过多时，浏览器显示不了，就可以拖动这个窗口看超出的内容
+          initial-scale:初始放大后的网页
+          minimum-scale和maximum-scale：这个虚拟窗口能被缩放的范围[0.25,10]
+          user-scalable:是否可以被缩放
+     ----------------------------
+     针对设备不同，采用不同css样式或采用不同的资源,
+     更多信息：http://www.html5rocks.com/en/mobile/high-dpi/
+     https://developer.chrome.com/multidevice/webview/pixelperfect
+     http://www.html5rocks.com/en/mobile/responsivedesign/
+
+     window.devicePixelRatio;//javascript获得设备的屏幕密度
+
+    根据屏幕密度不同,采用不同的css样式：
+        <link rel="stylesheet" media="screen and (-webkit-device-pixel-ratio: 1.5)" href="hdpi.css" />
+        <link rel="stylesheet" media="screen and (-webkit-device-pixel-ratio: 1.0)" href="mdpi.css" />
+     根据屏幕密度不同,采用不同的资源：
+     #header {
+         background:url(medium-density-image.png);
+     }
+
+     @media screen and (-webkit-device-pixel-ratio: 1.5) {
+         /* CSS for high-density screens */
+         #header {
+             background:url(high-density-image.png);
+         }
+     }
+
+     @media screen and (-webkit-device-pixel-ratio: 0.75) {
+         /* CSS for low-density screens */
+         #header {
+             background:url(low-density-image.png);
+         }
+     }
+
+2、4.4系统之后的webview
+         chrome调试webview加载页面
+         https://developers.google.com/web/tools/chrome-devtools/remote-debugging/?utm_source=dcc&utm_medium=redirect&utm_campaign=2016q3
+        这位老兄翻译好了：http://blog.csdn.net/developer_jiangqq/article/details/40783659
+      -----------------------------
+        userAgent
+         ---官方介绍： If you need to retrieve the user agent but don't need to store it for your app or do not want to instantiate WebView, you should use the static method, getDefaultUserAgent().
+                         However, if you intend to override the user agent string in your WebView, you may instead want to use getUserAgentString()
+
+         String userAgentString = mWebView.getSettings().getUserAgentString();//如下
+           Mozilla/5.0 (Linux; U; Android 4.1.1; zh-cn; HUAWEI C8813 Build/HuaweiC8813) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30
+        --------
+        不能在子线程对webview操作
+        -----------
+        在4.4系统之后，webview加强了URL scheme的管理。URL scheme.就是网址中XXX://这部分，
+        实现了 shouldOverrideUrlLoading() 或 shouldInterceptRequest() 回调接口，如果这个url是不合法的，那么这两个接口不会被回调
+        如果url是自定义，那么在4.4系统可能会出现上面接口没有被回调或加载失败，所以url的自定义需要遵循RFC 3986文档
+        https://tools.ietf.org/html/rfc3986
+        -----------
+         loadDataWithBaseURL()，使用这个加载网页时，
+         ---------
+         不再支持viewport的target-densitydpi属性
+         --------
+         为了使html在webview完美展现，请看官方：https://developer.chrome.com/multidevice/webview/pixelperfect
+         ------------------
+         使viewport起作用：
+         WebSettings settings = webView.getSettings();
+         settings.setUseWideViewPort(true);
+         settings.setLoadWithOverviewMode(true);
+          ---------------------
+         当webview加载网页，这个网页监听touch事件，会有已下情况会造成触摸事件消失，所以还需要监听touchcancel事件：
+          1、当控件元素被触摸(touchstart和touchmove被调用)，之后页面滚动的时候，触发touchcancel事件
+          2、当控件元素被触摸(touchstart被调用)但没调用event.preventDefault()来取消浏览器对这个事件的默认处理,触发touchcancel事件(WebView认为你不需要触摸事件)。
+3、4.4之前和之后的变化 -----------
+
+         1、  在4.4系统之前
+                  viewport的width属性<=320的话默认设为device-width，viewport的height属性 <=webview的高度的话默认设为idevice-height
+             在4.4系统之后，上面的情况变为：width和height是多少就是多少，不会做特殊处理。并且webview扩大到铺满整个屏幕宽度
+         2、  在4.4系统之前
+                 html中定义了多个标签<meta name="viewport" content="属性:值">，webview会将这些属性设置合并一起并应用
+             在4.4系统之后，上面的情况变为：
+                只有最后一个viewport才被应用，其他的都忽视
+         3、在所有系统版本，getDefaultZoom() and setDefaultZoom()被抛弃了，都不再支持，请在网页中定义它的缩放等级
+         4、之前：js中window.outerWidth/outerHeight返回的设备屏幕的宽度/高度，是正确的手机屏幕的宽/高
+            之后：返回值，是基于css像素，不是android中像素，这两种像素是不一样的
+                   解决：如果viewport禁用缩放和初始scale设置为1，用window.devicepixelratio乘以此返回值，就是正确的手机屏幕宽/高
+             更多解释：http://www.quirksmode.org/blog/archives/2012/03/windowouterwidt.html
+         5、在所有系统版本：NARROW_COLUMNS值和SINGLE_COLUMN将不再被支持
+           mWebView.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+               mWebView.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
+
+          NARROW_COLUMNS值将不再被支持，通过以下两种方式来达到她的效果
+          <pre style="word-wrap: break-word; white-space: pre-wrap;">//如果没有定义viewport属性，这个设置是有效的。
+            WebSettings.LayoutAlgorithm TEXT_AUTOSIZING来替代
+
+【新的技术词】
+    webview,webviewclient,URl-scheme,chrome调试手机上的网页，useragent，<pre>,viewport、viewport的target-denitydpi
+
